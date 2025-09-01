@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; padding: 10px; }
+      label { font-weight: bold; display: block; margin-top: 10px; }
+      input { width: 95%; padding: 5px; }
+      ul.sugerencias { 
+        border: 1px solid #ccc; 
+        max-height: 120px; 
+        overflow-y: auto; 
+        list-style: none; 
+        padding: 0; 
+        margin: 2px 0 10px 0; 
+        width: 95%;
+      }
+      ul.sugerencias li {
+        padding: 6px;
+        cursor: pointer;
+        background: #fff;
+      }
+      ul.sugerencias li:hover {
+        background: #f0f0f0;
+      }
+      table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+      th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+      th { background: #f4f4f4; }
+      .btn { margin-top: 15px; padding: 8px 15px; border: none; background: #4CAF50; color: white; cursor: pointer; border-radius: 5px; }
+      .btn:hover { background: #45a049; }
+
+      .btn-limpiar {
+      background-color: #facc15; color: black; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s;
+      }
+      .btn-limpiar:hover {background-color: #eab308; /* Amarillo un poco más fuerte */
+      }
+
+    </style>
+  </head>
+  <body>
+    <h3>Consulta de Materiales</h3>
+
+    <label for="idInput">Buscar por ID (Placa):</label>
+    <input type="text" id="idInput" placeholder="Escribe ID..." onkeyup="buscarSugerencias('id')">
+    <ul id="sugerenciasId" class="sugerencias"></ul>
+
+    <label for="descInput">Buscar por Descripción:</label>
+    <input type="text" id="descInput" placeholder="Escribe descripción..." onkeyup="buscarSugerencias('desc')">
+    <ul id="sugerenciasDesc" class="sugerencias"></ul>
+
+    <button class="btn" onclick="consultarMaterial()">🔎 Consultar</button>
+    <button class="btn-limpiar" onclick="limpiarCampos()">🧹 Limpiar</button>
+
+    <div id="resultados"></div>
+
+    <script>
+      // Buscar coincidencias dinámicas
+      function buscarSugerencias(tipo) {
+        const valor = tipo === 'id' ? document.getElementById('idInput').value : document.getElementById('descInput').value;
+        if (valor.length < 3) {
+          document.getElementById(tipo === 'id' ? 'sugerenciasId' : 'sugerenciasDesc').innerHTML = "";
+          return;
+        }
+
+        google.script.run.withSuccessHandler(function(datos) {
+          let lista = "";
+          datos.forEach(item => {
+            lista += "<li onclick=\"seleccionar('" + tipo + "','" + item + "')\">" + item + "</li>";
+          });
+          document.getElementById(tipo === 'id' ? 'sugerenciasId' : 'sugerenciasDesc').innerHTML = lista;
+        }).obtenerSugerencias(tipo, valor);
+      }
+
+      // Cuando se selecciona un item
+      function seleccionar(tipo, valor) {
+        if (tipo === 'id') {
+          document.getElementById('idInput').value = valor;
+          document.getElementById('sugerenciasId').innerHTML = "";
+        } else {
+          document.getElementById('descInput').value = valor;
+          document.getElementById('sugerenciasDesc').innerHTML = "";
+        }
+      }
+
+      // Ejecutar la consulta final
+      function consultarMaterial() {
+        const id = document.getElementById('idInput').value;
+        const desc = document.getElementById('descInput').value;
+
+        google.script.run.withSuccessHandler(function(datos) {
+          let html = "<table><tr><th>ID (Placa)</th><th>Descripción</th><th>Stock</th><th>Responsable</th><th>Upi/Sede</th><th>Contacto</th><th>Contrato Fin</th></tr>";
+          if (datos.length > 0) {
+            datos.forEach(row => {
+              html += "<tr><td>" + row.id + "</td><td>" + row.descripcion + "</td><td>" + row.stock + "</td><td>" + (row.responsable||'') + "</td><td>" + (row.sede||'') + "</td><td>" + (row.contacto||'') + "</td><td>" + (row.fin||'') + "</td></tr>";
+            });
+          } else {
+            html += "<tr><td colspan='7'>No se encontraron resultados</td></tr>";
+          }
+          html += "</table>";
+          document.getElementById('resultados').innerHTML = html;
+        }).buscarMaterial(id, desc);
+      }
+
+      // Ejecutar función limpiar
+      function limpiarCampos() {
+        document.getElementById("idInput").value = "";
+        document.getElementById("descInput").value = "";
+        document.getElementById("sugerenciasId").innerHTML = "";
+        document.getElementById("sugerenciasDesc").innerHTML = "";
+        document.getElementById("resultados").innerHTML = "";
+      }
+
+
+    </script>
+  </body>
+</html>
