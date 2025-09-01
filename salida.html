@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h3>Registrar Salida</h3>
+    <label>Responsable:</label>
+    <select id="responsable"></select><br><br>
+    <label>Material:</label>
+    <select id="material"></select><br><br>
+    <label>Cantidad:</label>
+    <input type="number" id="cantidad" min="1"><br><br>
+    <button onclick="enviar()">Registrar</button>
+
+    <div id="mensaje" style="margin-top:10px; font-weight:bold; color:green;"></div>
+
+
+    <script>
+      google.script.run.withSuccessHandler(function(responsables) {
+        const sel = document.getElementById('responsable');
+        responsables.forEach(r => {
+          let opt = document.createElement('option');
+          opt.value = r.id;
+          opt.text = `${r.id} - ${r.nombre}`;
+          sel.add(opt);
+        });
+      }).obtenerResponsables();
+
+      google.script.run.withSuccessHandler(function(materiales) {
+        const sel = document.getElementById('material');
+        materiales.forEach(m => {
+          let opt = document.createElement('option');
+          opt.value = m.id;
+          opt.text = `${m.id} - ${m.nombre}`;
+          sel.add(opt);
+        });
+      }).obtenerMateriales();
+
+      function enviar() {
+        const datos = {
+          responsable: document.getElementById('responsable').value,
+          material: document.getElementById('material').value,
+          cantidad: parseInt(document.getElementById('cantidad').value)
+        };
+        //google.script.run.withSuccessHandler(alert).registrarSalida(datos);
+        google.script.run.withSuccessHandler(function(msg) {
+        document.getElementById('mensaje').innerHTML = msg;
+        }).registrarSalida(datos);
+      }
+    </script>
+  </body>
+</html>
