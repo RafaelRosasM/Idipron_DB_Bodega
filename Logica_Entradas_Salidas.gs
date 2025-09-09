@@ -34,82 +34,122 @@ function formularioConsultaMaterial() {
   SpreadsheetApp.getUi().showModalDialog(html, 'Consulta de Materiales');
 }
 
+// ============================
 // Procesar Salida
+// ============================
 function registrarSalida(datos) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const materiales = ss.getSheetByName('MATERIALES');
   const historial = ss.getSheetByName('HISTORIAL_INVENTARIO');
 
-// ✅ Validación de cantidad
+  // ✅ Validación de cantidad
   if (!Number.isInteger(datos.cantidad) || datos.cantidad <= 0) {
     return '❌ La cantidad debe ser un número entero positivo mayor que 0';
   }
 
   const data = materiales.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === datos.material) {
-      let stockActual = data[i][2];
-      if (stockActual >= datos.cantidad) {
-        materiales.getRange(i+1, 3).setValue(stockActual - datos.cantidad);
-        historial.appendRow([
-          new Date(),
-          datos.responsable,
-          datos.material,
-          datos.cantidad,
-          'SALIDA'
-        ]);
-        return '✅ Salida registrada con éxito';
-      } else {
-        return '❌ Stock insuficiente';
-      }
-    }
-  }
-  return '❌ Material no encontrado';
-}
+  Logger.log("Comparando: Hoja=" + data[i][0] + " | Modal=" + datos.material);
 
-// Procesar Entrada
-function registrarEntrada(datos) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const materiales = ss.getSheetByName('MATERIALES');
-  const historial = ss.getSheetByName('HISTORIAL_INVENTARIO');
+  if (data[i][0].toString().trim() === datos.material.toString().trim()) {
+    let stockActual = parseInt(data[i][2], 10) || 0;
+    Logger.log("✅ Material encontrado, stock actual: " + stockActual);
 
-// ✅ Validación de cantidad
-  if (!Number.isInteger(datos.cantidad) || datos.cantidad <= 0) {
-    return '❌ La cantidad debe ser un número entero positivo mayor que 0';
-  }
-
-  const data = materiales.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === datos.material) {
-      let stockActual = data[i][2];
-      materiales.getRange(i+1, 3).setValue(stockActual + datos.cantidad);
+    if (stockActual >= datos.cantidad) {
+      materiales.getRange(i+1, 3).setValue(stockActual - datos.cantidad);
       historial.appendRow([
         new Date(),
         datos.responsable,
         datos.material,
         datos.cantidad,
-        'ENTRADA'
+        'SALIDA'
       ]);
-      return '✅ Entrada registrada con éxito';
+      return '✅ Salida registrada con éxito';
+    } else {
+      return '❌ Stock insuficiente';
     }
   }
+}
   return '❌ Material no encontrado';
 }
 
+// ============================
+// Procesar Entrada
+// ============================
+function registrarEntrada(datos) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const materiales = ss.getSheetByName('MATERIALES');
+  const historial = ss.getSheetByName('HISTORIAL_INVENTARIO');
+
+  // ✅ Validación de cantidad
+  if (!Number.isInteger(datos.cantidad) || datos.cantidad <= 0) {
+    return '❌ La cantidad debe ser un número entero positivo mayor que 0';
+  }
+
+  const data = materiales.getDataRange().getValues();
+for (let i = 1; i < data.length; i++) {
+  Logger.log("Comparando: Hoja=" + data[i][0] + " | Modal=" + datos.material);
+
+  if (data[i][0].toString().trim() === datos.material.toString().trim()) { // ID
+    let stockActual = parseInt(data[i][2], 10) || 0; // STOCK (si está vacío, arranca en 0)
+    Logger.log("✅ Material encontrado, stock actual: " + stockActual);
+
+    materiales.getRange(i+1, 3).setValue(stockActual + datos.cantidad);
+
+    historial.appendRow([
+      new Date(),
+      datos.responsable,
+      datos.material,
+      datos.cantidad,
+      'ENTRADA'
+    ]);
+
+    return '✅ Entrada registrada con éxito';
+  }
+}
+  return '❌ Material no encontrado';
+}
+
+// ============================
 // Listas desplegables para formularios
+// ============================
 function obtenerResponsables() {
   const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('RESPONSABLES');
   const data = hoja.getDataRange().getValues();
-  return data.slice(1).map(row => ({id: row[0], nombre: row[1]}));
+  return data.slice(1).map(row => ({
+    id: row[0] != null ? row[0].toString().trim() : "",
+    nombre: row[1] != null ? row[1].toString().trim() : "",
+    contacto: row[2] != null ? row[2].toString().trim() : "",
+    upi: row[3] != null ? row[3].toString().trim() : "",
+    contratoFin: row[4] != null ? row[4].toString().trim() : ""
+  }));
 }
 
 function obtenerMateriales() {
   const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('MATERIALES');
+  const grupos = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('GRUPO_MATERIAL').getDataRange().getValues();
+
+  // crear diccionario grupoId → nombreGrupo
+  const dictGrupos = {};
+  for (let i = 1; i < grupos.length; i++) {
+    dictGrupos[grupos[i][0]] = grupos[i][1];
+  }
+
   const data = hoja.getDataRange().getValues();
-  return data.slice(1).map(row => ({id: row[0], nombre: row[1]}));
+  return data.slice(1).map(row => ({
+    id: row[0],                // ID
+    nombre: row[1],            // DESCRIPCION
+    stock: row[2],             // STOCK
+    elemento: row[3],
+    serial: row[4],
+    valorHistorico: row[5],
+    grupo: dictGrupos[row[6]] || ""  // Buscar el grupo por ID
+  }));
 }
 
+// ============================
 // Devuelve sugerencias para autocompletar
+// ============================
 function obtenerSugerencias(tipo, valor) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const hoja = ss.getSheetByName("MATERIALES"); 
@@ -122,23 +162,38 @@ function obtenerSugerencias(tipo, valor) {
     .slice(0, 25); // Máximo 25 sugerencias
 }
 
+// ============================
 // Procesar Consulta
+// ============================
 function buscarMaterial(id, descripcion) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const materialesSheet = ss.getSheetByName("MATERIALES");
   const historialSheet = ss.getSheetByName("HISTORIAL_INVENTARIO");
   const responsablesSheet = ss.getSheetByName("RESPONSABLES");
+  const gruposSheet = ss.getSheetByName("GRUPO_MATERIAL");
 
   const materiales = materialesSheet.getDataRange().getValues();
   const historial = historialSheet.getDataRange().getValues();
   const responsables = responsablesSheet.getDataRange().getValues();
+  const grupos = gruposSheet.getDataRange().getValues();
+
+  // Diccionario grupos
+  const dictGrupos = {};
+  for (let i = 1; i < grupos.length; i++) {
+    dictGrupos[grupos[i][0]] = grupos[i][1];
+  }
 
   let resultados = [];
 
   for (let i = 1; i < materiales.length; i++) {
-    let matID = materiales[i][0];   // Col A: ID (placa)
-    let matDesc = materiales[i][1]; // Col B: Descripción
-    let stock = materiales[i][2];   // Col C: Stock
+    let matID = materiales[i][0];       // ID
+    let matDesc = materiales[i][1];     // Descripción
+    let stock = materiales[i][2];       // Stock
+    let elemento = materiales[i][3];
+    let serial = materiales[i][4];
+    let valorHistorico = materiales[i][5];
+    let grupoID = materiales[i][6];
+    let grupoNombre = dictGrupos[grupoID] || "";
 
     // Filtro por ID o descripción
     if ((id && matID.toString().toLowerCase().includes(id.toLowerCase())) ||
@@ -148,7 +203,6 @@ function buscarMaterial(id, descripcion) {
       let prestamosPorResponsable = {};
 
       for (let j = 1; j < historial.length; j++) {
-        let fecha = historial[j][0];
         let responsable = historial[j][1];
         let materialID = historial[j][2];
         let cantidad = historial[j][3];
@@ -177,10 +231,9 @@ function buscarMaterial(id, descripcion) {
           let upi = "", contacto = "", contratoFin = "";
           for (let r = 1; r < responsables.length; r++) {
             if (responsables[r][0] == resp) { 
-              // suponiendo col A: Nombre Responsable
-              upi = responsables[r][1];
+              upi = responsables[r][3];
               contacto = responsables[r][2];
-              contratoFin = responsables[r][3];
+              contratoFin = responsables[r][4];
               break;
             }
           }
@@ -189,6 +242,10 @@ function buscarMaterial(id, descripcion) {
             id: matID,
             descripcion: matDesc,
             stock: stock,
+            elemento: elemento,
+            serial: serial,
+            valorHistorico: valorHistorico,
+            grupo: grupoNombre,
             responsable: resp,
             upi: upi,
             contacto: contacto,
@@ -204,6 +261,10 @@ function buscarMaterial(id, descripcion) {
           id: matID,
           descripcion: matDesc,
           stock: stock,
+          elemento: elemento,
+          serial: serial,
+          valorHistorico: valorHistorico,
+          grupo: grupoNombre,
           responsable: "",
           upi: "",
           contacto: "",
