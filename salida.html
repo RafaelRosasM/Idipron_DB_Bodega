@@ -1,13 +1,22 @@
 <!DOCTYPE html>
 <html>
   <body>
-    <h3>Registrar Salida</h3>
-    <label>Responsable:</label>
-    <select id="responsable"></select><br><br>
-    <label>Material:</label>
-    <select id="material"></select><br><br>
-    <label>Cantidad:</label>
-    <input type="number" id="cantidad" min="1"><br><br>
+    <h3>Ingrese Los Datos De Salida</h3>
+
+    <div class="campo">
+      <label for="responsable">Responsable:</label>
+      <select id="responsable" class="input-estilizado"></select>
+    </div>
+
+    <div class="campo">
+      <label for="material">Material:</label>
+      <select id="material" class="input-estilizado"></select>
+    </div>
+
+    <div class="campo">
+      <label for="cantidad">Cantidad:</label>
+      <input type="number" id="cantidad" min="1" class="input-estilizado">
+    </div>
 
     <!-- Botón con spinner -->
     <button id="btnSalida" class="btn-salida" onclick="enviar()">
@@ -16,6 +25,42 @@
     </button>
 
     <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+      }
+
+      /* Contenedor de cada campo */
+      .campo {
+        margin-bottom: 15px;
+      }
+
+      /* Etiquetas */
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #333;
+      }
+
+      /* Inputs y selects estilizados */
+      .input-estilizado {
+        width: 95%;
+        padding: 8px 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background-color: #f9f9f9;
+        font-size: 14px;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        transition: border-color 0.3s, box-shadow 0.3s;
+      }
+      .input-estilizado:focus {
+        border-color: #16a34a;
+        box-shadow: 0 0 4px #16a34a;
+        outline: none;
+        background-color: #fff;
+      }
+
+      /* Botón verde con spinner */
       .btn-salida {
         background-color: #16a34a; /* Verde fuerte */
         color: white;
@@ -34,16 +79,15 @@
         background-color: #15803d; /* Verde más oscuro al pasar */
       }
 
-      /* Spinner CSS */
+      /* Spinner */
       .spinner {
-        border: 3px solid #f3f3f3; /* color gris claro */
-        border-top: 3px solid white; /* color de animación */
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid white;
         border-radius: 50%;
         width: 14px;
         height: 14px;
         animation: spin 1s linear infinite;
       }
-
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
