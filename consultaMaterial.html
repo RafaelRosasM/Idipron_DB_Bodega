@@ -3,38 +3,122 @@
   <head>
     <base target="_top">
     <style>
-      body { font-family: Arial, sans-serif; padding: 10px; }
-      label { font-weight: bold; display: block; margin-top: 10px; }
-      input { width: 95%; padding: 5px; }
-      ul.sugerencias { 
-        border: 1px solid #ccc; 
-        max-height: 120px; 
-        overflow-y: auto; 
-        list-style: none; 
-        padding: 0; 
-        margin: 2px 0 10px 0; 
-        width: 95%;
+      body {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        padding: 10px;
+        background: #f9fafb;
       }
-      ul.sugerencias li {
-        padding: 6px;
-        cursor: pointer;
+      h3 {
+        color: #111827;
+        font-size: 20px;
+        margin-bottom: 15px;
+      }
+
+      label {
+        font-weight: 600;
+        display: block;
+        margin-top: 12px;
+        margin-bottom: 4px;
+      }
+
+      input[type="text"] {
+        width: 95%;
+        padding: 8px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border 0.3s;
+      }
+      input[type="text"]:focus {
+        border-color: #4f46e5;
+        outline: none;
+      }
+
+      ul.sugerencias {
+        border: 1px solid #ccc;
+        max-height: 120px;
+        overflow-y: auto;
+        list-style: none;
+        padding: 0;
+        margin: 2px 0 10px 0;
+        width: 95%;
+        border-radius: 6px;
         background: #fff;
       }
+      ul.sugerencias li {
+        padding: 6px 10px;
+        cursor: pointer;
+      }
       ul.sugerencias li:hover {
-        background: #f0f0f0;
+        background: #e5e7eb;
       }
-      table { border-collapse: collapse; width: 100%; margin-top: 15px; }
-      th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-      th { background: #f4f4f4; }
-      .btn { margin-top: 15px; padding: 8px 15px; border: none; background: #4CAF50; color: white; cursor: pointer; border-radius: 5px; }
-      .btn:hover { background: #45a049; }
 
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th, td {
+        border: 1px solid #e5e7eb;
+        padding: 8px;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        background: #f3f4f6;
+      }
+
+      /* Botón principal con spinner */
+      .btn-consultar {
+        margin-top: 15px;
+        padding: 10px 18px;
+        background-color: #16a34a;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-consultar:hover {
+        background-color: #15803d;
+      }
+
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid white;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* Botón limpiar */
       .btn-limpiar {
-      background-color: #facc15; color: black; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.3s;
+        background-color: #facc15;
+        color: black;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-left: 10px;
+        transition: background 0.3s;
       }
-      .btn-limpiar:hover {background-color: #eab308; /* Amarillo un poco más fuerte */
+      .btn-limpiar:hover {
+        background-color: #eab308;
       }
-
     </style>
   </head>
   <body>
@@ -48,60 +132,96 @@
     <input type="text" id="descInput" placeholder="Escribe descripción..." onkeyup="buscarSugerencias('desc')">
     <ul id="sugerenciasDesc" class="sugerencias"></ul>
 
-    <button class="btn" onclick="consultarMaterial()">🔎 Consultar</button>
+
+    <!-- Botón con spinner -->
+    <button id="btnBuscar" class="btn-consultar" onclick="consultarMaterial()">
+      <span id="spinner" class="spinner" style="display:none;"></span>
+      <span id="btnText">🔎 Consultar</span>
+    </button>
+
     <button class="btn-limpiar" onclick="limpiarCampos()">🧹 Limpiar</button>
 
     <div id="resultados"></div>
 
     <script>
-      // Buscar coincidencias dinámicas
-      function buscarSugerencias(tipo) {
-        const valor = tipo === 'id' ? document.getElementById('idInput').value : document.getElementById('descInput').value;
+            function buscarSugerencias(tipo) {
+        const valor = tipo === 'id' ? 
+        document.getElementById('idInput').value
+        : document.getElementById('descInput').value;
+
         if (valor.length < 3) {
           document.getElementById(tipo === 'id' ? 'sugerenciasId' : 'sugerenciasDesc').innerHTML = "";
           return;
         }
-
         google.script.run.withSuccessHandler(function(datos) {
           let lista = "";
           datos.forEach(item => {
-            lista += "<li onclick=\"seleccionar('" + tipo + "','" + item + "')\">" + item + "</li>";
+            // nuevo
+            const idSafe   = encodeURIComponent(item.id);
+            const descSafe = encodeURIComponent(item.desc);
+            //
+            lista += `<li onclick="seleccionar('${idSafe}','${descSafe}')">${item.id} - ${item.desc}</li>`;
           });
           document.getElementById(tipo === 'id' ? 'sugerenciasId' : 'sugerenciasDesc').innerHTML = lista;
         }).obtenerSugerencias(tipo, valor);
       }
 
-      // Cuando se selecciona un item
-      function seleccionar(tipo, valor) {
-        if (tipo === 'id') {
-          document.getElementById('idInput').value = valor;
-          document.getElementById('sugerenciasId').innerHTML = "";
-        } else {
-          document.getElementById('descInput').value = valor;
-          document.getElementById('sugerenciasDesc').innerHTML = "";
-        }
+            function seleccionar(idEncoded, descEncoded) {
+              const id   = decodeURIComponent(idEncoded);
+              const desc = decodeURIComponent(descEncoded);
+        document.getElementById('idInput').value = id;
+        document.getElementById('descInput').value = desc;
+        document.getElementById('sugerenciasId').innerHTML = "";
+        document.getElementById('sugerenciasDesc').innerHTML = "";
       }
 
-      // Ejecutar la consulta final
       function consultarMaterial() {
+        const btn = document.getElementById("btnBuscar");
+        const spinner = document.getElementById("spinner");
+        const btnText = document.getElementById("btnText");
+
         const id = document.getElementById('idInput').value;
         const desc = document.getElementById('descInput').value;
 
+        // Mostrar spinner y desactivar botón
+        spinner.style.display = "inline-block";
+        btnText.textContent = "Buscando...";
+        btn.disabled = true;
+
         google.script.run.withSuccessHandler(function(datos) {
-          let html = "<table><tr><th>ID (Placa)</th><th>Descripción</th><th>Stock</th><th>Responsable</th><th>Upi/Sede</th><th>Contacto</th><th>Contrato Fin</th></tr>";
+          let html = "<table><tr><th>ID (Placa)</th><th>Descripción</th><th>Stock</th><th>Responsable</th><th>Upi/Sede</th><th>Fecha de préstamo</th><th>Fecha de devolución</th><th>Contacto</th><th>Contrato Fin</th></tr>";
           if (datos.length > 0) {
-            datos.forEach(row => {
-              html += "<tr><td>" + row.id + "</td><td>" + row.descripcion + "</td><td>" + row.stock + "</td><td>" + (row.responsable||'') + "</td><td>" + (row.sede||'') + "</td><td>" + (row.contacto||'') + "</td><td>" + (row.fin||'') + "</td></tr>";
-            });
+            datos.forEach(row => {  
+          html += `<tr>
+            <td>${row.id}</td>
+            <td>${row.descripcion}</td>
+            <td>${row.stock}</td>
+            <td>${row.responsable || ''}</td>
+            <td>${row.upi || ''}</td>
+            <td>${row.fechaPrestamo || ''}</td>
+            <td>${row.fechaDevolucion || ''}</td>
+            <td>${row.contacto || ''}</td>
+            <td>${row.contratoFin || ''}</td>
+          </tr>`;
+          });
+
           } else {
-            html += "<tr><td colspan='7'>No se encontraron resultados</td></tr>";
+            html += "<tr><td colspan='9'>No se encontraron resultados</td></tr>";
           }
           html += "</table>";
           document.getElementById('resultados').innerHTML = html;
+
+          spinner.style.display = "none";
+          btnText.textContent = "🔎 Consultar";
+          btn.disabled = false;
+        }).withFailureHandler(function(err) {
+          document.getElementById('resultados').innerHTML = "❌ Error: " + err;
+          spinner.style.display = "none";
+          btnText.textContent = "🔎 Consultar";
+          btn.disabled = false;
         }).buscarMaterial(id, desc);
       }
 
-      // Ejecutar función limpiar
       function limpiarCampos() {
         document.getElementById("idInput").value = "";
         document.getElementById("descInput").value = "";
@@ -109,8 +229,6 @@
         document.getElementById("sugerenciasDesc").innerHTML = "";
         document.getElementById("resultados").innerHTML = "";
       }
-
-
     </script>
   </body>
 </html>
