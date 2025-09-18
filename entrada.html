@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html>
   <body>
-    <h3>Registrar Entrada</h3>
+    <h3>Ingrese los Datos De Entrada</h3>
+
     <label>Responsable:</label>
-    <select id="responsable"></select><br><br>
+    <select id="responsable" class="styled-select"></select><br><br>
+
     <label>Material:</label>
-    <select id="material"></select><br><br>
+    <select id="material" class="styled-select"></select><br><br>
+
     <label>Cantidad:</label>
-    <input type="number" id="cantidad" min="1"><br><br>
+    <input type="number" id="cantidad" class="styled-input" min="1"><br><br>
 
     <!-- Botón con spinner -->
     <button id="btnEntrada" class="btn-entrada" onclick="enviar()">
@@ -16,6 +19,36 @@
     </button>
 
     <style>
+      /* === Estilo mejorado para los campos === */
+      label {
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 4px;
+        color: #333;
+      }
+
+      .styled-select,
+      .styled-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 15px;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+        background: #fff;
+      }
+
+      .styled-select:focus,
+      .styled-input:focus {
+        outline: none;
+        border-color: #16a34a;
+        box-shadow: 0 0 5px rgba(22, 163, 74, 0.5);
+      }
+
+      /* === Botón con spinner === */
       .btn-entrada {
         background-color: #16a34a; /* Verde fuerte */
         color: white;
@@ -43,7 +76,6 @@
         height: 14px;
         animation: spin 1s linear infinite;
       }
-
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
