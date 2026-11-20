@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <body>
-    <h3>Ingrese Los Datos De Salida</h3>
+    <h3>Registrar Salida de Equipo</h3>
 
     <div class="campo">
       <label for="responsable">Responsable:</label>
@@ -9,8 +9,14 @@
     </div>
 
     <div class="campo">
-      <label for="material">Material:</label>
-      <select id="material" class="input-estilizado"></select>
+      <label for="idEquipo">ID (Placa de equipo):</label>
+      <input type="text" id="idEquipo" class="input-estilizado" placeholder="Ingrese al menos 3 caracteres para buscar...">
+      <ul id="listaResultados" class="resultados"></ul>
+    </div>
+
+    <div class="campo">
+      <label for="nombreEquipo">Equipo:</label>
+      <input type="text" id="nombreEquipo" class="input-estilizado" readonly>
     </div>
 
     <div class="campo">
@@ -18,85 +24,70 @@
       <input type="number" id="cantidad" min="1" class="input-estilizado">
     </div>
 
-    <!-- Botón con spinner -->
+    <div class="campo">
+      <label for="fecha">Fecha de Movimiento:</label>
+      <input type="date" id="fecha" class="input-estilizado" required>
+    </div>
+
+    <!-- NUEVO CAMPO UPI -->
+    <div class="campo">
+      <label for="upi">UPI:</label>
+      <select id="upi" class="input-estilizado"></select>
+    </div>
+
     <button id="btnSalida" class="btn-salida" onclick="enviar()">
       <span id="spinner" class="spinner" style="display:none;"></span>
       <span id="btnText">Registrar Salida ➡️</span>
     </button>
 
+    <div id="mensaje" style="margin-top:10px; font-weight:bold; color:green;"></div>
+
     <style>
-      body {
-        font-family: 'Segoe UI', Tahoma, sans-serif;
-      }
-
-      /* Contenedor de cada campo */
-      .campo {
-        margin-bottom: 15px;
-      }
-
-      /* Etiquetas */
-      label {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 5px;
-        color: #333;
-      }
-
-      /* Inputs y selects estilizados */
+      body { font-family: 'Segoe UI', Tahoma, sans-serif; }
+      .campo { margin-bottom: 15px; position: relative; }
+      label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
       .input-estilizado {
-        width: 95%;
-        padding: 8px 10px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        background-color: #f9f9f9;
-        font-size: 14px;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-        transition: border-color 0.3s, box-shadow 0.3s;
+        width: 95%; padding: 8px 10px; border: 1px solid #ccc;
+        border-radius: 6px; background-color: #f9f9f9;
+        font-size: 14px; transition: border-color 0.3s, box-shadow 0.3s;
       }
       .input-estilizado:focus {
-        border-color: #16a34a;
-        box-shadow: 0 0 4px #16a34a;
-        outline: none;
-        background-color: #fff;
+        border-color: #16a34a; box-shadow: 0 0 4px #16a34a;
+        background-color: #fff; outline: none;
       }
-
-      /* Botón verde con spinner */
       .btn-salida {
-        background-color: #16a34a; /* Verde fuerte */
-        color: white;
-        padding: 10px 18px;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: background 0.3s;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
+        background-color: #16a34a; color: white; padding: 10px 18px;
+        border: none; border-radius: 8px; font-size: 14px; font-weight: bold;
+        cursor: pointer; transition: background 0.3s;
+        display: inline-flex; align-items: center; gap: 8px;
       }
-      .btn-salida:hover {
-        background-color: #15803d; /* Verde más oscuro al pasar */
-      }
+      .btn-salida:hover { background-color: #15803d; }
 
-      /* Spinner */
       .spinner {
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid white;
-        border-radius: 50%;
-        width: 14px;
-        height: 14px;
+        border: 3px solid #f3f3f3; border-top: 3px solid white;
+        border-radius: 50%; width: 14px; height: 14px;
         animation: spin 1s linear infinite;
       }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+      .resultados {
+        list-style: none; margin: 0; padding: 0;
+        border: 1px solid #ccc; border-radius: 6px;
+        background-color: #fff; max-height: 150px; overflow-y: auto;
+        width: 95%; position: absolute; z-index: 10;
+      }
+      .resultados li {
+        padding: 8px; cursor: pointer;
+      }
+      .resultados li:hover {
+        background-color: #e0f2f1;
       }
     </style>
 
-    <div id="mensaje" style="margin-top:10px; font-weight:bold; color:green;"></div>
-
     <script>
+      const hoy = new Date().toISOString().split("T")[0];
+      document.getElementById("fecha").setAttribute("max", hoy);
+
       // Cargar responsables
       google.script.run.withSuccessHandler(function(responsables) {
         const sel = document.getElementById('responsable');
@@ -108,16 +99,45 @@
         });
       }).obtenerResponsables();
 
-      // Cargar materiales
-      google.script.run.withSuccessHandler(function(materiales) {
-        const sel = document.getElementById('material');
-        materiales.forEach(m => {
-          let opt = document.createElement('option');
-          opt.value = m.id;
-          opt.text = `${m.id} - ${m.nombre} (Grupo: ${m.grupo})`;
+      // Cargar UPI
+      google.script.run.withSuccessHandler(function(listaUPI) {
+        const sel = document.getElementById("upi");
+        listaUPI.forEach(u => {
+          let opt = document.createElement("option");
+          opt.value = u;
+          opt.text = u;
           sel.add(opt);
         });
-      }).obtenerMateriales();
+      }).obtenerUPI();
+
+      // ============================
+      // Búsqueda dinámica
+      // ============================
+      const inputID = document.getElementById('idEquipo');
+      const lista = document.getElementById('listaResultados');
+      const nombreEquipo = document.getElementById('nombreEquipo');
+
+      inputID.addEventListener('input', function() {
+        const termino = this.value.trim();
+        if (termino.length < 3) {
+          lista.innerHTML = '';
+          return;
+        }
+
+        google.script.run.withSuccessHandler(function(resultados) {
+          lista.innerHTML = '';
+          resultados.forEach(r => {
+            const li = document.createElement('li');
+            li.textContent = `${r.id} - ${r.nombre}`;
+            li.onclick = function() {
+              inputID.value = r.id;
+              nombreEquipo.value = r.nombre;
+              lista.innerHTML = '';
+            };
+            lista.appendChild(li);
+          });
+        }).buscarEquiposPorID(termino);
+      });
 
       function enviar() {
         const btn = document.getElementById("btnSalida");
@@ -126,26 +146,23 @@
 
         const datos = {
           responsable: document.getElementById('responsable').value,
-          material: document.getElementById('material').value,
-          cantidad: parseInt(document.getElementById('cantidad').value)
+          material: inputID.value,
+          cantidad: parseInt(document.getElementById('cantidad').value),
+          fecha: document.getElementById('fecha').value,
+          upi: document.getElementById('upi').value
         };
 
-        // Mostrar spinner y desactivar botón
+        if (!datos.material) {
+          document.getElementById('mensaje').innerHTML = "❌ Debe seleccionar un ID.";
+          return;
+        }
+
         spinner.style.display = "inline-block";
         btnText.textContent = "Registrando...";
         btn.disabled = true;
 
         google.script.run.withSuccessHandler(function(msg) {
           document.getElementById('mensaje').innerHTML = msg;
-
-          // Restaurar botón
-          spinner.style.display = "none";
-          btnText.textContent = "Registrar Salida ➡️";
-          btn.disabled = false;
-        }).withFailureHandler(function(err) {
-          document.getElementById('mensaje').innerHTML = "❌ Error: " + err;
-
-          // Restaurar botón
           spinner.style.display = "none";
           btnText.textContent = "Registrar Salida ➡️";
           btn.disabled = false;
